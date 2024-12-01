@@ -1,0 +1,141 @@
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class GestionAlmacen{
+    private static final String FILE_NAME = "coches.dat";
+    private static final String CSV_FILE_NAME = "coches.csv";
+    private static ArrayList<Coche> coches = new ArrayList<>();
+
+    public static void main(String[] args) {
+        cargarCoches();
+        Scanner scanner = new Scanner(System.in);
+        int opcion;
+
+        do {
+            mostrarMenu();
+            opcion = scanner.nextInt();
+            scanner.nextLine(); // Consumir la nueva línea
+
+            switch (opcion) {
+                case 1:
+                    anadirCoche(scanner);
+                    break;
+                case 2:
+                    borrarCochePorId(scanner);
+                    break;
+                case 3:
+                    consultarCochePorId(scanner);
+                    break;
+                case 4:
+                    listarCoches();
+                    break;
+                case 5:
+                    guardarCoches();
+                    System.out.println("Programa terminado. Datos guardados.");
+                    break;
+                case 6:
+                    exportarCochesACSV();
+                    break;
+                default:
+                    System.out.println("Opción no válida.");
+            }
+        } while (opcion != 5);
+    }
+
+    private static void mostrarMenu() {
+        System.out.println("\nMenú:");
+        System.out.println("1. Añadir nuevo coche");
+        System.out.println("2. Borrar coche por id");
+        System.out.println("3. Consultar coche por id");
+        System.out.println("4. Listado de coches");
+        System.out.println("5. Terminar el programa");
+        System.out.println("6. Exportar coches a archivo CSV");
+        System.out.print("Elige una opción: ");
+    }
+
+    private static void cargarCoches() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            coches = (ArrayList<Coche>) ois.readObject();
+            System.out.println("Coches cargados del archivo.");
+        } catch (FileNotFoundException e) {
+            System.out.println("Archivo no encontrado. Iniciando con una lista vacía.");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error al cargar los datos: " + e.getMessage());
+        }
+    }
+
+    private static void guardarCoches() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            oos.writeObject(coches);
+        } catch (IOException e) {
+            System.out.println("Error al guardar los datos: " + e.getMessage());
+        }
+    }
+
+    private static void anadirCoche(Scanner scanner) {
+        System.out.print("Introduce el id: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Consumir la nueva línea
+        System.out.print("Introduce la matrícula: ");
+        String matricula = scanner.nextLine();
+        System.out.print("Introduce la marca: ");
+        String marca = scanner.nextLine();
+        System.out.print("Introduce el modelo: ");
+        String modelo = scanner.nextLine();
+        System.out.print("Introduce el color: ");
+        String color = scanner.nextLine();
+
+        if (coches.stream().anyMatch(c -> c.getId() == id || c.getMatricula().equals(matricula))) {
+            System.out.println("Error: No se permiten IDs o matrículas duplicadas.");
+            return;
+        }
+
+        coches.add(new Coche(id, matricula, marca, modelo, color));
+        System.out.println("Coche añadido correctamente.");
+    }
+
+    private static void borrarCochePorId(Scanner scanner) {
+        System.out.print("Introduce el id del coche a borrar: ");
+        int id = scanner.nextInt();
+        if (coches.removeIf(c -> c.getId() == id)) {
+            System.out.println("Coche eliminado.");
+        } else {
+            System.out.println("No se encontró un coche con ese id.");
+        }
+    }
+
+    private static void consultarCochePorId(Scanner scanner) {
+        System.out.print("Introduce el id del coche a consultar: ");
+        int id = scanner.nextInt();
+        coches.stream()
+                .filter(c -> c.getId() == id)
+                .findFirst()
+                .ifPresentOrElse(
+                        System.out::println,
+                        () -> System.out.println("No se encontró un coche con ese id.")
+                );
+    }
+
+    private static void listarCoches() {
+        if (coches.isEmpty()) {
+            System.out.println("No hay coches en la lista.");
+        } else {
+            coches.forEach(System.out::println);
+        }
+    }
+
+    private static void exportarCochesACSV() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(CSV_FILE_NAME))) {
+            writer.println("id;matricula;marca;modelo;color");
+            for (Coche coche : coches) {
+                writer.printf("%d;%s;%s;%s;%s%n",
+                        coche.getId(), coche.getMatricula(), coche.getMarca(), coche.getModelo(), coche.getColor());
+            }
+            System.out.println("Coches exportados a " + CSV_FILE_NAME);
+        } catch (IOException e) {
+            System.out.println("Error al exportar los datos: " + e.getMessage());
+        }
+    }
+}
